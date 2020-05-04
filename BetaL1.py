@@ -187,9 +187,6 @@ def train(epoch, last_train_step=0):
         np.save("results_"+NAME+"/numpy/mu_train_"+ str(num_batches)+ ".npy", mu.detach().cpu().numpy())
         np.save("results_"+NAME+"/numpy/sigma_train_"+ str(num_batches)+ ".npy", logvar.detach().cpu().numpy())
         np.save("results_"+NAME+"/numpy/label_train_"+ str(num_batches)+ ".npy", label.detach().cpu().numpy())
-        munp = mu.detach().cpu().numpy()
-        lognp = logvar.detach().cpu().numpy()
-        labelnp = label.detach().cpu().numpy()
         optimizer.zero_grad()
         
         # Original: Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
@@ -279,7 +276,7 @@ if __name__ == "__main__":
         test(epoch)
         "SAVE MODEL"
         torch.save(model.state_dict(), NAME+".pt")
-        
+
         "LOSS PLOT"
         plt.figure(figsize=(15,10))
         plt.plot(range(len(train_losses)),train_losses)
