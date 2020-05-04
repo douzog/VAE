@@ -5,10 +5,18 @@ Unless requested, the dataset cannot be shared, thorugh structure should work fo
 
 Order:
 matrix.py
+
 sup.py
+
 unsup.py 
+
 BetaL1.py
+
 sup_testset.py
+
 eval_model.py
+
 cluster.py
+
 visualize.py
+
