@@ -81,14 +81,6 @@ def create_data():
         mask[mask > 0] = 255.
         mask = Image.fromarray(mask, mode='L')
 
-        white_result_array = np.zeros(1200)
-        grey_result_array = np.zeros(1200)
-
-        blue_np = np.array(blue)
-        grey_mask_np = np.array(grey_mask)
-        white_mask_np = np.array(white_mask)
-
-
         try:
             os.mkdir("Testset/brain/")
             os.mkdir("Testset/brain/white/")
@@ -117,36 +109,41 @@ def create_data():
                 bw_matrix = np.array(bw_box)
 
 
-                "WHITE MATTER ACCEPT"
+                
                 if sum_mask_white >= acceptance and sum_mask>= acceptance:
+                    "WHITE MATTER ACCEPT"
                     label = 0
                     img_white = img_white + 1
                     all_count += 1
-                    blue_box.save("Testset/brain/white/" +str(all_count) + ".tif", "TIFF")
-                    # blue_box.save("Testsetpatches/white/" + str(img_white) + "_" + brain_num[i] + ".tif", "TIFF")
+                    blue_box.save("Testset/brain/white/" +str(all_count) + ".tif", "TIFF") # save patch onto corresponding folder
+
+                    # save all accepted coordinates onto one file
                     with open("Testset/coordinates/the_all_file.txt", 'a') as the_all_file:
                         the_all_file.write(str(all_count) + '\t' + str(label)+'_'+ str(coord[0]) + '_' + str(coord[1])+ '_' + str(coord[2])+ '_' + str(coord[3]) +'\n')
-
+                    
+                    # save accepted coordinate onto the white matter file
                     with open("Testset/coordinates/"+brain_num[i]+'coord_white.txt', 'a') as the_file:
-                        # the_file.write(str(coord[0]) + '\t' + str(coord[1])+ '\t' + str(coord[2])+ '\t' + str(coord[3])+'\t' +'\n')
-                        the_file.write(str(img_white) + '\t' + str(coord[0]) + '\t' + str(coord[1])+ '\t' + str(coord[2])+ '\t' + str(coord[3])+'\n')         
-                    "GREY MATTER ACCEPT"
+                        the_file.write(str(img_white) + '\t' + str(coord[0]) + '\t' + str(coord[1])+ '\t' + str(coord[2])+ '\t' + str(coord[3])+'\n')   
+
                 elif sum_mask_grey >= acceptance and sum_mask >= acceptance:
+                    "GREY MATTER ACCEPT"
                     label = 1
                     img_grey = img_grey + 1
                     all_count += 1
-                    blue_box.save("Testset/brain/grey/" +str(all_count)+ ".tif", "TIFF")
-                    # blue_box.save("Testsetpatches/grey/" + str(img_grey)+"_"+brain_num[i]  + ".tif", "TIFF")
+                    blue_box.save("Testset/brain/grey/" +str(all_count)+ ".tif", "TIFF")  # save patch onto corresponding folder
+
+                    # save all accepted coordinates onto one file
                     with open("Testset/coordinates/the_all_file.txt", 'a') as the_all_file:
                         the_all_file.write(str(all_count) + '\t' + str(label)+'\t'+ str(coord[0]) + '_' + str(coord[1])+ '_' + str(coord[2])+ '_' + str(coord[3])+'\n')
 
+                    # save accepted coordinate onto the grey matter file
                     with open("Testset/coordinates/"+brain_num[i]+'coord_grey.txt', 'a') as the_file2:
                         # the_file2.write(str(coord[0]) + '\t' + str(coord[1])+ '\t' + str(coord[2])+ '\t' + str(coord[3])+'\t' +'\n')
                         the_file2.write(str(img_grey) + '\t' + str(coord[0]) + '\t' + str(coord[1])+ '\t' + str(coord[2])+ '\t' + str(coord[3])+'\n')
 
                 else:
-                    "NO"
                     discarded = discarded + 1
+
                 count = count + 1
                 blue_box.close()
                 white_mask_box.close()
@@ -163,6 +160,7 @@ def create_data():
     return data
 
 def coord():
+    # visualize that only wanted data has been put into train from analuzing the coordinate files
     for i in range(0, len(brain_num)):
         blue = Image.open("input/brain/17015_thio_" + brain_num[i] + ".tif")
         blue.save("Testset/" + brain_num[i]+"originalw.jpg")
@@ -170,19 +168,17 @@ def coord():
         f = open("Testset/coordinates/"+brain_num[i]+"coord_white.txt", 'r')
         x = int(blue.size[0])
         y = int(blue.size[1])
-        white = Image.new('RGB', (x, y), color = 'white')
+        white = Image.new('RGB', (x, y), color = 'white') # create an empty image to visualize only accepted data
         
         for line in f.readlines():
-            x = line.split()
-            # print(x)
+            x = line.split() # strip items from each line
             tup_ = (int(x[1]), int(x[2]), int(x[3]), int(x[4]))
-            # print(tup_)
-            box = blue_clean.crop(tup_)
+            box = blue_clean.crop(tup_) # crop from coordinate
             try:
-                white.paste(box, tup_)
-                blue.paste(black, tup_)
+                white.paste(box, tup_) # paste onto blank
+                blue.paste(black, tup_) # paste onto original with a black box
             except:
-                print("fail but go on white")
+                print("fail")
 
         blue.save("Testset/" + brain_num[i]+"BLUEW.jpg")
         white.save("Testset/" + brain_num[i]+"WHITEW.jpg")
@@ -192,6 +188,7 @@ def coord():
         f.close()
 
     for i in range(0, len(brain_num)):
+        # same procedure as above except for grey matter
         blue = Image.open("input/brain/17015_thio_" + brain_num[i] + ".tif")
         blue.save("Testset/" + brain_num[i]+"originalg.jpg")
         blue_clean = blue
@@ -203,14 +200,13 @@ def coord():
         
         for line in g.readlines():
             x = line.split()
-            img_ = int(x[0])
             tup_ = (int(x[1]), int(x[2]), int(x[3]), int(x[4]))
             box = blue_clean.crop(tup_)
             try:
                 white.paste(box, tup_)
                 blue.paste(black, tup_)
             except:
-                print("fail but go on grey")
+                print("fail")
 
         blue.save("Testset/" + brain_num[i]+"BLUEG.jpg")
         white.save("Testset/" + brain_num[i]+"WHITEG.jpg")
@@ -218,7 +214,7 @@ def coord():
         white.close()
         blue.close()
         g.close()
-        data = "DONE"
+        data = "(づ｡◕‿‿◕｡)づ coord finished!"
         return data
 
 
