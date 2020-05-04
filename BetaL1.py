@@ -13,11 +13,13 @@ import os
 import torch.nn.init as init
 import numpy as np
 
-
+# Author: Isabella Douzoglou
+# Partial code from:
 # https://github.com/pytorch/examples/blob/master/vae/main.py
 # https://github.com/TDehaene/blogposts/blob/master/vae_new_food/notebooks/vae_pytorch.ipynb
 # https://github.com/federicobergamin/Ladder-Variational-Autoencoders/
 
+"HYPERPARAMETERS"
 TITLE= "BetaL1_"
 EPOCH =700
 N_WARM_UP = 100
@@ -27,10 +29,9 @@ latent_dim = 20
 calc_shape = 256
 pixel = 32
 dim = pixel + pixel
-
 NAME = TITLE +"LR:"+str(LEARNING_RATE)+"_WU:"+str(N_WARM_UP)+"_E:"+str(EPOCH)+"_Ldim:"+str(latent_dim)
-print(NAME)
 
+"RESULTS FOLDER"
 try:
     os.mkdir("results_"+NAME+"/")
     os.mkdir("results_"+NAME+"/numpy/")
@@ -60,33 +61,37 @@ cuda = not no_cuda and torch.cuda.is_available()
 device = torch.device("cuda" if cuda else "cpu")
 kwargs = {'num_workers': 1, 'pin_memory': True} if cuda else {}
 
-"LOAD DATA"
 train_root = 'Trainpatches'
 val_root = 'Testpatches'
+transform = transforms.Compose([
+    transforms.RandomVerticalFlip(p=0.5),
+    transforms.RandomHorizontalFlip(p=0.5),
+    transforms.ToTensor()])
+
+"DATA LOADER"
 train_loader = torch.utils.data.DataLoader(
-    datasets.ImageFolder(train_root, transform=transforms.ToTensor()),
+    datasets.ImageFolder(train_root, transform=transform),
     batch_size = args.batch_size, shuffle=True, **kwargs)
 test_loader = torch.utils.data.DataLoader(
-    datasets.ImageFolder(val_root, transform=transforms.ToTensor()),
+    datasets.ImageFolder(val_root, transform=transform),
     batch_size = args.batch_size, shuffle=False, **kwargs)
-
 
 "DECLARE MODEL CLASS"
 class BetaVAE(nn.Module):
     def __init__(self):
         super(BetaVAE, self).__init__()
-        self.conv1 = nn.Conv2d(3, 32, 4, 2, 1)
+        self.conv1 = nn.Conv2d(3, 32, 4, 2, 1) 
         self.conv2 = nn.Conv2d(32, 32, 4, 2, 1)
         self.conv3 = nn.Conv2d(32, 64, 4, 2, 1)
         self.conv4 = nn.Conv2d(64, 64, 4, 2, 1)
         self.conv5 = nn.Conv2d(64, 256, 4, 1)
 
-        self.fc11 = nn.Linear(calc_shape, latent_dim)
+        self.fc11 = nn.Linear(calc_shape, latent_dim) 
         self.fc12 = nn.Linear(calc_shape, latent_dim)
 
-        self.fc2 = nn.Linear(latent_dim, 256)
+        self.fc2 = nn.Linear(latent_dim, 256) 
 
-        self.deconv1 = nn.ConvTranspose2d(256, 64, 4)
+        self.deconv1 = nn.ConvTranspose2d(256, 64, 4) 
         self.deconv2 = nn.ConvTranspose2d(64, 64, 4, 2, 1)
         self.deconv3 = nn.ConvTranspose2d(64, 32, 4, 2, 1)
         self.deconv4 = nn.ConvTranspose2d(32, 32, 4, 2, 1)
@@ -108,7 +113,7 @@ class BetaVAE(nn.Module):
         return self.fc11(flat), self.fc12(flat)
 
     def reparameterize(self, mu, log_sigma):
-        std = torch.exp(0.5 * log_sigma)
+        std = torch.exp(0.5 * log_sigma) 
         eps = torch.randn_like(std)
         return mu + eps * std
 
@@ -140,7 +145,6 @@ def reparametrize(mu, logvar):
     eps = Variable(std.data.new(std.size()).normal_())
     return mu + std*eps
 
-
 class DeterministicWarmup(object):
     def __init__(self, n_steps, t_max=1):
         self.t = 0
@@ -154,16 +158,15 @@ class DeterministicWarmup(object):
         return self.t
         
 
-"NEW MODEL"
+"DECLARE NEW MODEL"
 model = BetaVAE().to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
 scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, "min", min_lr=1e-6, patience=2, verbose=2)
 val_losses = []
 train_losses = []
-beta = DeterministicWarmup(n_steps=N_WARM_UP, t_max=1) # Linear warm-up from 0 to 1 over 50 epochs
+beta = DeterministicWarmup(n_steps=N_WARM_UP, t_max=1) # BETA paramter created in the DeterminsticWarmup class
 
 "TRAIN"
-
 def train(epoch, last_train_step=0):
     if epoch == 1:
         _beta = 0
@@ -187,8 +190,13 @@ def train(epoch, last_train_step=0):
         munp = mu.detach().cpu().numpy()
         lognp = logvar.detach().cpu().numpy()
         labelnp = label.detach().cpu().numpy()
-
         optimizer.zero_grad()
+        
+        # Original: Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
+        # https://arxiv.org/abs/1312.6114
+        # 0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
+        # Adjustement: L1 Loss + Beta
+        
         KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
         likelihood = - F.l1_loss(reconstruction, images, reduction='sum')
         elbo = likelihood - _beta * torch.sum(KLD)
@@ -197,6 +205,7 @@ def train(epoch, last_train_step=0):
         train_loss += loss.item()
         optimizer.step()
 
+        # saving example reconstruction per epoch
         if batch_idx == 0:
             n = min(data.size(0), 8)
             comparison = torch.cat([data[:n].to(device),
@@ -204,13 +213,7 @@ def train(epoch, last_train_step=0):
             save_image(comparison.cpu().detach(),
                         'results_'+NAME+'/reconstruction_train_' + str(epoch) + '.png', nrow=n)
 
-
         num_batches += 1
-        # if batch_idx % args.log_interval == 0:
-            # print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-            #     epoch, batch_idx * len(data), len(train_loader.dataset),
-            #     100. * batch_idx / len(train_loader),
-            #     loss.item() / len(data)))
 
     
     print('====> Epoch: {} Average loss: {:.4f}'.format(
@@ -223,7 +226,6 @@ def train(epoch, last_train_step=0):
 
 
 "TEST"
-
 def test(epoch):
     model.eval()
     test_loss = 0
@@ -240,6 +242,12 @@ def test(epoch):
             munp = mu.detach().cpu().numpy()
             lognp = logvar.detach().cpu().numpy()
             labelnp = label.detach().cpu().numpy()
+
+        
+            # Original: Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
+            # https://arxiv.org/abs/1312.6114
+            # 0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
+            # Adjustement: L1 Loss 
 
             KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
             likelihood = - F.l1_loss(recon_batch, data, reduction='sum')
@@ -258,17 +266,21 @@ def test(epoch):
     test_loss /= len(test_loader.dataset)
     print('====> Test set loss: {:.4f}'.format(test_loss))
     if epoch >0:
-        val_losses.append(test_loss)
+        val_losses.append(test_loss) # adjust to see the minimum loss, removing the first n-epochs
     np.save(NAME+"_val_loss.npy", val_losses)
 
 if __name__ == "__main__":
     last_train_step = 0
     result_label = np.array([])
     for epoch in range(1, args.epochs + 1):
+        "TRAIN"
         train_loss, last_train_step = train(epoch, last_train_step)
+        "TEST"
         test(epoch)
+        "SAVE MODEL"
         torch.save(model.state_dict(), NAME+".pt")
-
+        
+        "LOSS PLOT"
         plt.figure(figsize=(15,10))
         plt.plot(range(len(train_losses)),train_losses)
         plt.plot(range(len(val_losses)),val_losses)
