@@ -14,6 +14,11 @@ import os
 import torch.nn.init as init
 import numpy as np
 
+# Author: Isabella Douzoglou
+# Partial code:
+# https://github.com/pytorch/examples/blob/master/vae/main.py
+# https://github.com/TDehaene/blogposts/blob/master/vae_new_food/notebooks/vae_pytorch.ipynb
+# https://github.com/federicobergamin/Ladder-Variational-Autoencoders/
 
 TITLE= "BetaL1_"
 EPOCH =1
@@ -59,27 +64,16 @@ device = torch.device("cuda" if cuda else "cpu")
 kwargs = {'num_workers': 1, 'pin_memory': True} if cuda else {}
 
 
-
 class MyData(datasets.ImageFolder):
     def __getitem__(self, idx):
-        # this is what ImageFolder normally returns 
+        # custom data class in order to return path as well as img 
         original_tuple = super(MyData, self).__getitem__(idx)
         path = self.imgs[idx][0]
-        img = np.array(original_tuple[0])
-        label = np.array(original_tuple[1])
-        # print("paht", path)
-
         path = path.strip('Testset/brain/white/')
         path = path.strip('Testset/brain/grey/')
         path = path.strip('.tif')
-        path = int(path)
-
-        # print("paht", path)
-        # print(original_tuple)
-        # make a new tuple that includes original and the path
+        path = int(path) # strip all info return number
         tuple_with_path = (original_tuple + (path,))
-        # print(tuple_with_path)
- 
         return tuple_with_path
     def __len__(self):
         return len(self.imgs)
@@ -179,12 +173,7 @@ def test(epoch):
     num_batches = 0
     with torch.no_grad():
         for i, (data, label, path) in enumerate(test_loader):
- 
-            # print(data)
-            # print(label.shape)
-            # print(path.shape)
-            # label = label.to(device)
-            # path = path.to(device)
+
             im = data.to(device)
             recon_batch, mu, logvar = model(im)
             np.save("eval_"+NAME+"/numpy/mu"+ str(num_batches)+ ".npy", mu.detach().cpu().numpy())
@@ -192,11 +181,10 @@ def test(epoch):
             np.save("eval_"+NAME+"/numpy/label"+ str(num_batches)+ ".npy", label.detach().cpu().numpy())
             np.save("eval_"+NAME+"/numpy/path"+ str(num_batches)+ ".npy", path.detach().cpu().numpy())
 
-            munp = mu.detach().cpu().numpy()
-            lognp = logvar.detach().cpu().numpy()
-            labelnp = label.detach().cpu().numpy()
-
-            "LOSS L1"
+            # Original: Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
+            # https://arxiv.org/abs/1312.6114
+            # 0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
+            # Adjustement: L1 Loss 
             
             KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
             likelihood = - F.l1_loss(recon_batch, data, reduction='sum')
@@ -218,14 +206,15 @@ def test(epoch):
         test_losses.append(test_loss)
     np.save(NAME+"_eval_loss.npy", test_losses)
 
-
 if __name__ == "__main__":
+
     "GET MODEL"
     model = BetaVAE().to(device)
     model.load_state_dict(torch.load("BetaL1_LR:0.0001_WU:100_E:700_Ldim:20.pt"))
 
+    "EVALUATE MODEL"
     model.eval()
-
-    result_label = np.array([])
+    
+    "TEST"
     for epoch in range(1, args.epochs + 1):
         test(epoch)

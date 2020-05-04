@@ -98,7 +98,6 @@ def create_data():
                 bw_box = blue_box.convert('L')
                 white_mask_box = white_mask.crop(coord)
                 grey_mask_box = grey_mask.crop(coord)
-                blue_box_np = np.array(blue_box)   
                 grey_mask_box_np = np.array(grey_mask_box)
                 white_mask_box_np = np.array(white_mask_box)
                 sum_mask_white = np.sum(white_mask_box_np)
@@ -106,10 +105,7 @@ def create_data():
                 mask_box = mask.crop(coord)
                 mask_box_np = np.array(mask_box)
                 sum_mask = np.sum(mask_box_np)
-                bw_matrix = np.array(bw_box)
 
-
-                
                 if sum_mask_white >= acceptance and sum_mask>= acceptance:
                     "WHITE MATTER ACCEPT"
                     label = 0
