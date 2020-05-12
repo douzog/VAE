@@ -113,35 +113,28 @@ if __name__ == "__main__":
     print(TEST)
 
     "TRAIN SET" 
-    Xt = load2d(TRAIN, "mu_train_", 4271)
+    Xmut = load2d(TRAIN, "mu_train_", 4271)
+    Xsigt = load2d(TRAIN, "sigma_train_", 4271)
     yt = load(TRAIN, "label_train_", 4271)
 
     "VAL SET" 
-    Xv = load2d(TRAIN, "mu", 295)
+    Xmuv = load2d(TRAIN, "mu", 295)
+    Xsigv = load2d(TRAIN, "sigma", 295)
     yv = load(TRAIN, "label", 295)
-    tensor_train =  torch.from_numpy(Xt)
-    tensor_label_train =  torch.from_numpy(yt)  
-    train = data.TensorDataset(tensor_train, tensor_label_train)
-    trainset = data.DataLoader(train, batch_size=32)
-    tensor_cali =  torch.from_numpy(Xv)
-    tensor_label_cali =  torch.from_numpy(yv)  
-    cali_dataset = data.TensorDataset(tensor_cali, tensor_label_cali)
-    caliset = data.DataLoader(cali_dataset, batch_size=32)
+
 
     "TESTING"
-    mu_test = load2d(TEST, "mu", 231)
-    label_test = load(TEST, "label", 231)
-    path = load(TEST, "path", 231)
-    tensor_test = torch.from_numpy(mu_test)
-    tensor_label_test = torch.from_numpy(label_test)
-    test_dataset = data.TensorDataset(tensor_test, tensor_label_test)
-    testset = data.DataLoader(test_dataset, batch_size=32)
+    mu_test = load2d(TEST, "mu", 3705)
+    sigma_test = load2d(TEST, "sigma", 3705)
+    label_test = load(TEST, "label", 3705)
+    path = load(TEST, "path", 3705)
+
 
     "SEND TO CLUSTERING, MAKE N MODELS, RETURN AVERAGE"
-    pred_y, avg_score = myKmeans(Xv, mu_test, label_test, 10) # mu performed better than sigma
+    pred_y, avg_score = myKmeans(Xmut, mu_test, label_test, 1) 
     print("truth     ", label_test)
     print("pred_y    " , pred_y)
-    print("score avg " , avg_score)
+    print("score avg MU " , avg_score)
 
     "WRITE OUT FILE FROM SAMPLE NUMBER, TRUE AND PREDICTED VALUE"
     for i in range(0, len(pred_y)):
