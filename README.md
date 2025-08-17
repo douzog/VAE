@@ -8,7 +8,9 @@ the structure should work for 64x64 images by updating the root folder of the da
 
 IMCN Research Unit Integrative Model-based Cognitive Neuroscience
 
-Using the determinitic warmups and L1 loss, the scirpt BetaL1.py illustrates the architecture of the VAE model achitecture:
+Using the determinitic warmups and L1 loss, BetaL1.py illustrates the architecture of the VAE model:
+
+![image](modelarchitecture.png)
 
 
 If you have questions about VAEs or wish to learn about our implementation, feel free to contact me!
