@@ -1,10 +1,9 @@
 # VAE
-This code is a portion of my master thesis: 
+This code is a portion of my master's thesis:
 # Variational Autoencoders for Histological Image Segmentation of the Cerebral Subcortex
 ### IMCN Research Unit Integrative Model-based Cognitive Neuroscience
-
-Bioinformatics & Systems Biology Major Internship 2020
-University of Amsterdam
+### Bioinformatics & Systems Biology Major Internship
+##### University of Amsterdam and The Free University of Amsterdam
 
 ![image](BRAINTABLE.png)
 
